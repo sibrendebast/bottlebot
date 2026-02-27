@@ -4,6 +4,8 @@
 #include "LGFX_Waveshare_7.hpp"
 #include <ESP_IOExpander_Library.h>
 #include <Wire.h>
+#include "ui/ui_theme.h"
+#include "ui/screens/screen_dashboard.h"
 
 // Create LGFX instance
 LGFX lcd;
@@ -59,20 +61,6 @@ void my_touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data) {
     }
 }
 
-static void btn_event_cb(lv_event_t * e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t * btn = lv_event_get_target(e);
-    if(code == LV_EVENT_CLICKED) {
-        static uint8_t cnt = 0;
-        cnt++;
-
-        /*Get the first child of the button which is the label and change its text*/
-        lv_obj_t * label = lv_obj_get_child(btn, 0);
-        lv_label_set_text_fmt(label, "Button: %d", cnt);
-    }
-}
-
 void setup() {
     Serial.begin(115200);
     Serial.println("Starting Bottle Machine HMI...");
@@ -125,18 +113,14 @@ void setup() {
     indev_drv.read_cb = my_touchpad_read;
     lv_indev_drv_register(&indev_drv);
 
-    // 5. Create basic UI Test
-    lv_obj_t *label = lv_label_create(lv_scr_act());
-    lv_label_set_text(label, "Bottle Machine HMI Starting...");
-    lv_obj_align(label, LV_ALIGN_CENTER, 0, -50);
+    // 5. Initialize Custom UI
+    ui_theme_init();
+    ui_screen_dashboard_init();
     
-    lv_obj_t *btn1 = lv_btn_create(lv_scr_act());
-    lv_obj_add_event_cb(btn1, btn_event_cb, LV_EVENT_ALL, NULL);
-    lv_obj_align(btn1, LV_ALIGN_CENTER, 0, 50);
-    
-    lv_obj_t *btn_label = lv_label_create(btn1);
-    lv_label_set_text(btn_label, "Start Machine");
-    lv_obj_center(btn_label);
+    // Set some dummy data
+    ui_update_fermenter_data(0, 18.5f, 18.0f, true, true, false, -30.0f);
+    ui_update_fermenter_data(1, 21.0f, 21.0f, true, false, false, 0.0f);
+    ui_update_fermenter_data(2, 4.0f, 4.0f, true, true, false, -80.0f);
 
     Serial.println("Setup done");
 }
