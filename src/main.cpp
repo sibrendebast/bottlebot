@@ -56,7 +56,12 @@ void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *c
 void my_touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data) {
     uint16_t touchX, touchY;
 
-    bool touched = lcd.getTouch(&touchX, &touchY);
+    bool touched = false;
+#if defined(ARDUINO)
+    touched = lcd.getTouch(&touchX, &touchY);
+#else
+    touched = lcd.getTouch(&touchX, &touchY);
+#endif
 
     if (!touched) {
         data->state = LV_INDEV_STATE_REL;
@@ -111,12 +116,12 @@ void setup() {
     delay(100);
 #endif
 
+    // Initialize LVGL before configuring display
+    lv_init();
+
     // 3. Initialize Display
     lcd.begin();
     lcd.fillScreen(TFT_BLACK);
-
-    // 4. Initialize LVGL
-    lv_init();
 
     lv_disp_draw_buf_init(&draw_buf, buf, NULL, screenWidth * screenHeight / 10);
 
@@ -136,14 +141,21 @@ void setup() {
     indev_drv.read_cb = my_touchpad_read;
     lv_indev_drv_register(&indev_drv);
 
-    // 5. Initialize Custom UI
     ui_theme_init();
     ui_screen_dashboard_init();
     
+#if !defined(ARDUINO)
+    // In native SDL, give LVGL a cycle to initialize internal style cache before setting states
+    lv_tick_inc(5);
+    lv_timer_handler();
+#endif
+
+#if defined(ARDUINO)
     // Set some dummy data
     ui_update_fermenter_data(0, 18.5f, 18.0f, true, true, false, -30.0f);
     ui_update_fermenter_data(1, 21.0f, 21.0f, true, false, false, 0.0f);
     ui_update_fermenter_data(2, 4.0f, 4.0f, true, true, false, -80.0f);
+#endif
 
 #if defined(ARDUINO)
     Serial.println("Setup done");

@@ -40,7 +40,7 @@ static void create_fermenter_card(lv_obj_t *parent, int index) {
     lv_obj_set_flex_align(header_row, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_add_style(header_row, &style_header, 0); // Bottom border
     lv_obj_set_style_pad_bottom(header_row, 10, 0);
-    lv_obj_set_style_margin_bottom(header_row, 15, 0);
+    lv_obj_set_style_pad_bottom(header_row, 15, 0);
 
     lv_obj_t *title = lv_label_create(header_row);
     char buf[32];
@@ -58,7 +58,7 @@ static void create_fermenter_card(lv_obj_t *parent, int index) {
     lv_obj_set_layout(temp_row, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(temp_row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(temp_row, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_margin_bottom(temp_row, 15, 0);
+    lv_obj_set_style_pad_bottom(temp_row, 15, 0);
 
     lv_obj_t *temp_label_title = lv_label_create(temp_row);
     lv_label_set_text(temp_label_title, "Temperature:");
@@ -75,7 +75,7 @@ static void create_fermenter_card(lv_obj_t *parent, int index) {
     lv_obj_remove_style_all(pid_container);
     lv_obj_set_width(pid_container, lv_pct(100));
     lv_obj_set_height(pid_container, LV_SIZE_CONTENT);
-    lv_obj_set_style_margin_bottom(pid_container, 15, 0);
+    lv_obj_set_style_pad_bottom(pid_container, 15, 0);
 
     pid_bars[index] = lv_bar_create(pid_container);
     lv_obj_remove_style_all(pid_bars[index]);
@@ -207,9 +207,9 @@ void ui_update_fermenter_data(uint8_t index, float current_temp, float target_te
     lv_label_set_text(target_labels[index], buf);
 
     // Update Switch
-    if (is_active && !lv_obj_has_state(status_switches[index], LV_STATE_CHECKED)) {
+    if (is_active) {
         lv_obj_add_state(status_switches[index], LV_STATE_CHECKED);
-    } else if (!is_active && lv_obj_has_state(status_switches[index], LV_STATE_CHECKED)) {
+    } else {
         lv_obj_clear_state(status_switches[index], LV_STATE_CHECKED);
     }
 
