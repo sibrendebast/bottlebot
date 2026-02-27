@@ -2,7 +2,6 @@
 #include "lv_conf.h"
 #include <lvgl.h>
 #include "LGFX_Waveshare_7.hpp"
-#include <ESP_IOExpander_Library.h>
 #include <Wire.h>
 #include "ui/ui_theme.h"
 #include "ui/screens/screen_dashboard.h"
@@ -10,8 +9,9 @@
 // Create LGFX instance
 LGFX lcd;
 
-// Create IO expander instance
-ESP_IOExpander *expander;
+// CH422G I2C Address (default is 0x24 or 0x20 depending on wiring)
+// The library used ESP_IO_EXPANDER_I2C_CH422G_ADDRESS_000 which is 0x24.
+#define CH422G_I2C_ADDR 0x24
 
 // Extender Pin define
 #define TP_RST 1
@@ -68,24 +68,35 @@ void setup() {
     // 1. Initialize I2C for Expander & Touch
     Wire.begin(I2C_MASTER_SDA_IO, I2C_MASTER_SCL_IO);
     
-    // 2. Initialize IO Expander (CH422G for Waveshare 7)
-    expander = new ESP_IOExpander_CH422G((i2c_port_t)I2C_MASTER_NUM, ESP_IO_EXPANDER_I2C_CH422G_ADDRESS_000);
-    expander->init();
-    expander->begin();
+    // 2. Initialize IO Expander (CH422G for Waveshare 7) manually
+    // Bit mapping based on schematic:
+    // Bit 1: TP_RST
+    // Bit 2: LCD_BL (DISP)
+    // Bit 3: LCD_RST
+    // Bit 4: SD_CS
+    // Bit 5: USB_SEL
+    // Bit 6: LCD_VDD_EN
     
-    // Configure expander pins as output
-    expander->multiPinMode(TP_RST | LCD_BL | LCD_RST | SD_CS | USB_SEL | LCD_VDD_EN, OUTPUT);
+    // We want to turn on LCD_VDD_EN (6), LCD_BL (2), LCD_RST (3), and initially TP_RST (1)
+    // 0x4E = 0100 1110 -> Bits 6(VDD), 3(LCD_RST), 2(LCD_BL), 1(TP_RST) are HIGH
     
-    // Power on LCD VDD & Backlight, pull Touch Reset High
-    expander->digitalWrite(LCD_VDD_EN, HIGH);
+    // First, configure outputs (CH422G requires setting IO direction, usually register 0x24)
+    Wire.beginTransmission(CH422G_I2C_ADDR);
+    Wire.write(0x4E); // All vital pins HIGH
+    Wire.endTransmission();
+    
     delay(100);
-    expander->digitalWrite(LCD_BL, HIGH);
-    expander->digitalWrite(LCD_RST, HIGH);
     
-    // Reset touch controller
-    expander->digitalWrite(TP_RST, LOW);
+    // Touch reset sequence (Pull TP_RST LOW briefly)
+    // 0x4C = 0100 1100 -> Bit 1 is LOW
+    Wire.beginTransmission(CH422G_I2C_ADDR);
+    Wire.write(0x4C); 
+    Wire.endTransmission();
     delay(20);
-    expander->digitalWrite(TP_RST, HIGH);
+    // Bring TP_RST HIGH again
+    Wire.beginTransmission(CH422G_I2C_ADDR);
+    Wire.write(0x4E); 
+    Wire.endTransmission();
     delay(100);
 
     // 3. Initialize Display
@@ -127,5 +138,6 @@ void setup() {
 
 void loop() {
     lv_timer_handler(); // let the GUI do its work
+    lv_tick_inc(5);     // tell LVGL 5ms have passed
     delay(5);
 }

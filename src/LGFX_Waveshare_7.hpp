@@ -91,11 +91,11 @@ public:
       cfg.pin_rst = TOUCH_RST; // Reset is handled manually through CH422G IO Expander before LGFX init
       cfg.bus_shared = false;
       cfg.offset_rotation = 0;
-      cfg.i2c_port = I2C_NUM_1;
+      cfg.i2c_port = 1; // Used to be I2C_NUM_1
       cfg.pin_sda = TOUCH_SDA;
       cfg.pin_scl = TOUCH_SCL;
       cfg.freq = 400000;
-      cfg.i2c_addr = 0x5D; // For GT911, usually 0x5D or 0x14 - will be handled by GT911 library itself during init anyway
+      cfg.i2c_addr = 0x5D;
       _touch_instance.config(cfg);
       _panel_instance.setTouch(&_touch_instance);
     }
