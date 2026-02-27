@@ -175,11 +175,15 @@ void loop() {
 }
 
 #if !defined(ARDUINO)
-int main(void) {
+int user_loop(bool* running) {
     setup();
-    while (1) {
+    while (*running) {
         loop();
     }
     return 0;
+}
+
+int main(void) {
+    return lgfx::Panel_sdl::main(user_loop);
 }
 #endif
