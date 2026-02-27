@@ -1,10 +1,16 @@
+#if defined(ARDUINO)
 #include <Arduino.h>
+#include <Wire.h>
+#else
+#include <stdio.h>
+#include <unistd.h>
+// #define delay(ms) usleep((ms)*1000) // Conflicting with LovyanGFX's delay()
+#endif
 #include "lv_conf.h"
 #include <lvgl.h>
 #include "LGFX_Waveshare_7.hpp"
-#include <Wire.h>
-#include "ui/ui_theme.h"
 #include "ui/screens/screen_dashboard.h"
+#include "ui/ui_theme.h"
 
 // Create LGFX instance
 LGFX lcd;
@@ -62,9 +68,14 @@ void my_touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data) {
 }
 
 void setup() {
+#if defined(ARDUINO)
     Serial.begin(115200);
     Serial.println("Starting Bottle Machine HMI...");
+#else
+    printf("Starting Bottle Machine HMI (Native)...\n");
+#endif
 
+#if defined(ARDUINO)
     // 1. Initialize I2C for Expander & Touch
     Wire.begin(I2C_MASTER_SDA_IO, I2C_MASTER_SCL_IO);
     
@@ -98,6 +109,7 @@ void setup() {
     Wire.write(0x4E); 
     Wire.endTransmission();
     delay(100);
+#endif
 
     // 3. Initialize Display
     lcd.begin();
@@ -133,11 +145,29 @@ void setup() {
     ui_update_fermenter_data(1, 21.0f, 21.0f, true, false, false, 0.0f);
     ui_update_fermenter_data(2, 4.0f, 4.0f, true, true, false, -80.0f);
 
+#if defined(ARDUINO)
     Serial.println("Setup done");
+#else
+    printf("Setup done\n");
+#endif
 }
 
 void loop() {
     lv_timer_handler(); // let the GUI do its work
     lv_tick_inc(5);     // tell LVGL 5ms have passed
+#if defined(ARDUINO)
     delay(5);
+#else
+    usleep(5000);
+#endif
 }
+
+#if !defined(ARDUINO)
+int main(void) {
+    setup();
+    while (1) {
+        loop();
+    }
+    return 0;
+}
+#endif

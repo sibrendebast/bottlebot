@@ -2,6 +2,8 @@
 
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
+
+#if defined(ARDUINO)
 #include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
 
@@ -102,3 +104,23 @@ public:
     setPanel(&_panel_instance);
   }
 };
+#else
+// Native (PC) SDL configuration
+class LGFX : public lgfx::LGFX_Device {
+public:
+  lgfx::Panel_sdl _panel_instance;
+  LGFX(void) {
+    {
+      auto cfg = _panel_instance.config();
+      cfg.memory_width  = 1024;
+      cfg.memory_height = 600;
+      cfg.panel_width  = 1024;
+      cfg.panel_height = 600;
+      cfg.offset_x = 0;
+      cfg.offset_y = 0;
+      _panel_instance.config(cfg);
+    }
+    setPanel(&_panel_instance);
+  }
+};
+#endif
