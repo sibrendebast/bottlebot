@@ -150,11 +150,14 @@ void setup() {
     lv_timer_handler();
 #endif
 
-#if defined(ARDUINO)
-    // Set some dummy data
-    ui_update_fermenter_data(0, 18.5f, 18.0f, true, true, false, -30.0f);
-    ui_update_fermenter_data(1, 21.0f, 21.0f, true, false, false, 0.0f);
-    ui_update_fermenter_data(2, 4.0f, 4.0f, true, true, false, -80.0f);
+#if defined(ARDUINO) || defined(NATIVE)
+    // Set some dummy data for the 4 heads to test the dashboard
+    ui_update_status("IDLE");
+    ui_update_lifetime(1254);
+    ui_update_head_data(0, true, 215, 330);
+    ui_update_head_data(1, true, 180, 330);
+    ui_update_head_data(2, false, 0, 330);
+    ui_update_head_data(3, true, 330, 330);
 #endif
 
 #if defined(ARDUINO)

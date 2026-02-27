@@ -8,6 +8,8 @@
 #define COLOR_PRIMARY lv_color_hex(0x56C99B)
 #define COLOR_TEXT lv_color_hex(0x000000)
 #define COLOR_TEXT_DIM lv_color_hex(0x6b7280) // Gray 500 equivalent
+#define COLOR_WARNING lv_color_hex(0xf39c12)
+#define COLOR_DANGER lv_color_hex(0xe74c3c)
 
 // Style holders
 extern lv_style_t style_screen_bg;
@@ -18,15 +20,19 @@ extern lv_style_t style_label;
 extern lv_style_t style_label_dim;
 extern lv_style_t style_btn;
 extern lv_style_t style_btn_primary;
+extern lv_style_t style_btn_warning;
+extern lv_style_t style_btn_danger;
 extern lv_style_t style_switch_bg;
 extern lv_style_t style_switch_knob;
 extern lv_style_t style_bar_bg;
 extern lv_style_t style_bar_indic;
+extern lv_style_t style_bar_bg_vert;
+extern lv_style_t style_bar_indic_vert;
 
 // Initialization routine
 void ui_theme_init(void);
 
 // Reusable components
 lv_obj_t* create_card(lv_obj_t *parent);
-lv_obj_t* create_button(lv_obj_t *parent, const char *text, bool is_primary);
+lv_obj_t* create_button(lv_obj_t *parent, const char *text, int type); // 0=Normal, 1=Primary, 2=Warning, 3=Danger
 lv_obj_t* create_switch(lv_obj_t *parent);

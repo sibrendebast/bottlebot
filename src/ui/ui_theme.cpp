@@ -9,10 +9,14 @@ lv_style_t style_label;
 lv_style_t style_label_dim;
 lv_style_t style_btn;
 lv_style_t style_btn_primary;
+lv_style_t style_btn_warning;
+lv_style_t style_btn_danger;
 lv_style_t style_switch_bg;
 lv_style_t style_switch_knob;
 lv_style_t style_bar_bg;
 lv_style_t style_bar_indic;
+lv_style_t style_bar_bg_vert;
+lv_style_t style_bar_indic_vert;
 
 void ui_theme_init(void) {
     // Screen Background (#f5f5f5)
@@ -75,6 +79,24 @@ void ui_theme_init(void) {
     lv_style_set_text_color(&style_btn_primary, lv_color_hex(0xffffff));
     lv_style_set_text_font(&style_btn_primary, &lv_font_montserrat_16);
 
+    // Warning Button (Orange bg)
+    lv_style_init(&style_btn_warning);
+    lv_style_set_bg_color(&style_btn_warning, COLOR_WARNING);
+    lv_style_set_border_width(&style_btn_warning, 2);
+    lv_style_set_border_color(&style_btn_warning, COLOR_BORDER);
+    lv_style_set_radius(&style_btn_warning, 0);
+    lv_style_set_text_color(&style_btn_warning, lv_color_hex(0xffffff));
+    lv_style_set_text_font(&style_btn_warning, &lv_font_montserrat_16);
+
+    // Danger Button (Red bg)
+    lv_style_init(&style_btn_danger);
+    lv_style_set_bg_color(&style_btn_danger, COLOR_DANGER);
+    lv_style_set_border_width(&style_btn_danger, 2);
+    lv_style_set_border_color(&style_btn_danger, COLOR_BORDER);
+    lv_style_set_radius(&style_btn_danger, 0);
+    lv_style_set_text_color(&style_btn_danger, lv_color_hex(0xffffff));
+    lv_style_set_text_font(&style_btn_danger, &lv_font_montserrat_16);
+
     // Switch Background (Gray, 2px border, 0px radius)
     lv_style_init(&style_switch_bg);
     lv_style_set_bg_color(&style_switch_bg, lv_color_hex(0xd1d5db)); // Gray 300
@@ -101,6 +123,19 @@ void ui_theme_init(void) {
     lv_style_init(&style_bar_indic);
     lv_style_set_bg_color(&style_bar_indic, COLOR_PRIMARY);
     lv_style_set_radius(&style_bar_indic, 0);
+
+    // Vertical Bar BG
+    lv_style_init(&style_bar_bg_vert);
+    lv_style_set_bg_color(&style_bar_bg_vert, lv_color_hex(0xe5e7eb));
+    lv_style_set_border_width(&style_bar_bg_vert, 2);
+    lv_style_set_border_color(&style_bar_bg_vert, COLOR_BORDER);
+    lv_style_set_radius(&style_bar_bg_vert, 0);
+    lv_style_set_pad_all(&style_bar_bg_vert, 2); // Internal pad for indicator
+
+    // Vertical Bar Indicator
+    lv_style_init(&style_bar_indic_vert);
+    lv_style_set_bg_color(&style_bar_indic_vert, COLOR_PRIMARY);
+    lv_style_set_radius(&style_bar_indic_vert, 0);
 }
 
 // Component Factory: Create standard Card
@@ -113,15 +148,33 @@ lv_obj_t* create_card(lv_obj_t *parent) {
 }
 
 // Component Factory: Create standard Button
-lv_obj_t* create_button(lv_obj_t *parent, const char *text, bool is_primary) {
+lv_obj_t* create_button(lv_obj_t *parent, const char *text, int type) {
     lv_obj_t *btn = lv_btn_create(parent);
     lv_obj_remove_style_all(btn);
-    lv_obj_add_style(btn, is_primary ? &style_btn_primary : &style_btn, 0);
+    
+    lv_style_t *base_style;
+    lv_color_t press_color;
+    
+    if (type == 1) { // Primary
+        base_style = &style_btn_primary;
+        press_color = lv_color_hex(0x45a882);
+    } else if (type == 2) { // Warning
+        base_style = &style_btn_warning;
+        press_color = lv_color_hex(0xd68910);
+    } else if (type == 3) { // Danger
+        base_style = &style_btn_danger;
+        press_color = lv_color_hex(0xc0392b);
+    } else { // Normal
+        base_style = &style_btn;
+        press_color = COLOR_BG;
+    }
+    
+    lv_obj_add_style(btn, base_style, 0);
     
     // Add pressed state styling
     lv_style_t style_pr;
     lv_style_init(&style_pr);
-    lv_style_set_bg_color(&style_pr, is_primary ? lv_color_hex(0x45a882) : COLOR_BG); // Darker green or gray on press
+    lv_style_set_bg_color(&style_pr, press_color);
     lv_obj_add_style(btn, &style_pr, LV_STATE_PRESSED);
 
     lv_obj_t *label = lv_label_create(btn);
