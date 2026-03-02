@@ -1,6 +1,7 @@
 #include "screen_dashboard.h"
 #include "../ui_theme.h"
 #include <stdio.h>
+#include "../../comm.h"
 
 #define NUM_HEADS 4
 
@@ -16,7 +17,8 @@ lv_obj_t *ta_co2_time;
 lv_obj_t *sw_beer[4];
 lv_obj_t *sw_co2;
 lv_obj_t *sw_head_lift;
-lv_obj_t *sw_gate;
+lv_obj_t *sw_gate_entry;
+lv_obj_t *sw_gate_exit;
 lv_obj_t *sw_conveyor;
 
 static lv_obj_t *panel_run;
@@ -46,6 +48,54 @@ static void ta_event_cb(lv_event_t * e) {
     }
     if(code == LV_EVENT_DEFOCUSED || code == LV_EVENT_READY || code == LV_EVENT_CANCEL) {
         if(kb != NULL) lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+static void start_btn_event_cb(lv_event_t * e) {
+    if(lv_event_get_code(e) == LV_EVENT_CLICKED) {
+        comm_send_start();
+    }
+}
+
+static void stop_btn_event_cb(lv_event_t * e) {
+    if(lv_event_get_code(e) == LV_EVENT_CLICKED) {
+        comm_send_stop();
+    }
+}
+
+static void estop_btn_event_cb(lv_event_t * e) {
+    if(lv_event_get_code(e) == LV_EVENT_CLICKED) {
+        comm_send_estop();
+    }
+}
+
+static void config_save_event_cb(lv_event_t * e) {
+    if(lv_event_get_code(e) == LV_EVENT_CLICKED) {
+        if(ta_co2_time) {
+            comm_send_set_co2(atoi(lv_textarea_get_text(ta_co2_time)));
+        }
+    }
+}
+
+static void manual_switch_event_cb(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * obj = lv_event_get_target(e);
+    bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
+    
+    if(code == LV_EVENT_VALUE_CHANGED) {
+        if (obj == sw_co2) comm_send_man_valve(0, state);
+        else if (obj == sw_head_lift) comm_send_man_pneu(1, state);
+        else if (obj == sw_gate_entry) comm_send_man_pneu(2, state);
+        else if (obj == sw_gate_exit) comm_send_man_pneu(3, state);
+        else if (obj == sw_conveyor) comm_send_man_conv(state);
+        else {
+            for(int i=0; i<NUM_HEADS; i++) {
+                if(obj == sw_beer[i]) {
+                    comm_send_man_valve(i+1, state);
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -117,12 +167,15 @@ static void build_run_screen(lv_obj_t * parent) {
 
     lv_obj_t *btn_start = create_button(footer, "START CYCLE", 1); // Primary
     lv_obj_set_size(btn_start, lv_pct(30), 80);
+    lv_obj_add_event_cb(btn_start, start_btn_event_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *btn_pause = create_button(footer, "PAUSE", 2); // Warning
     lv_obj_set_size(btn_pause, lv_pct(30), 80);
+    lv_obj_add_event_cb(btn_pause, stop_btn_event_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *btn_estop = create_button(footer, "GLOBAL E-STOP", 3); // Danger
     lv_obj_set_size(btn_estop, lv_pct(30), 80);
+    lv_obj_add_event_cb(btn_estop, estop_btn_event_cb, LV_EVENT_CLICKED, NULL);
 }
 
 static void build_recipe_screen(lv_obj_t * parent) {
@@ -167,6 +220,7 @@ static void build_recipe_screen(lv_obj_t * parent) {
 
     lv_obj_t *btn_save = create_button(form, "Save & Apply", 1);
     lv_obj_set_width(btn_save, lv_pct(100));
+    lv_obj_add_event_cb(btn_save, config_save_event_cb, LV_EVENT_CLICKED, NULL);
 }
 
 static void build_manual_screen(lv_obj_t * parent) {
@@ -233,14 +287,23 @@ static void build_manual_screen(lv_obj_t * parent) {
     lv_label_set_text(lbl_lift, "Head Lift");
     sw_head_lift = create_switch(row_lift);
 
-    lv_obj_t *row_gate = lv_obj_create(c_mech);
-    lv_obj_remove_style_all(row_gate);
-    lv_obj_set_width(row_gate, lv_pct(100));
-    lv_obj_set_layout(row_gate, LV_LAYOUT_FLEX);
-    lv_obj_set_flex_align(row_gate, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_t *lbl_gate = lv_label_create(row_gate);
-    lv_label_set_text(lbl_gate, "Gate");
-    sw_gate = create_switch(row_gate);
+    lv_obj_t *row_gate_e = lv_obj_create(c_mech);
+    lv_obj_remove_style_all(row_gate_e);
+    lv_obj_set_width(row_gate_e, lv_pct(100));
+    lv_obj_set_layout(row_gate_e, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_align(row_gate_e, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_t *lbl_gate_e = lv_label_create(row_gate_e);
+    lv_label_set_text(lbl_gate_e, "Entry Gate");
+    sw_gate_entry = create_switch(row_gate_e);
+
+    lv_obj_t *row_gate_x = lv_obj_create(c_mech);
+    lv_obj_remove_style_all(row_gate_x);
+    lv_obj_set_width(row_gate_x, lv_pct(100));
+    lv_obj_set_layout(row_gate_x, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_align(row_gate_x, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_t *lbl_gate_x = lv_label_create(row_gate_x);
+    lv_label_set_text(lbl_gate_x, "Exit Gate");
+    sw_gate_exit = create_switch(row_gate_x);
 
     lv_obj_t *row_conv = lv_obj_create(c_mech);
     lv_obj_remove_style_all(row_conv);
@@ -250,6 +313,16 @@ static void build_manual_screen(lv_obj_t * parent) {
     lv_obj_t *lbl_conv = lv_label_create(row_conv);
     lv_label_set_text(lbl_conv, "Conveyor");
     sw_conveyor = create_switch(row_conv);
+
+    // Manual Events
+    lv_obj_add_event_cb(sw_co2, manual_switch_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(sw_head_lift, manual_switch_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(sw_gate_entry, manual_switch_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(sw_gate_exit, manual_switch_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(sw_conveyor, manual_switch_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    for(int i=0; i<NUM_HEADS; i++) {
+        lv_obj_add_event_cb(sw_beer[i], manual_switch_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    }
 }
 
 void ui_screen_dashboard_init(void) {

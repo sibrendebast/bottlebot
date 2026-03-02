@@ -17,7 +17,8 @@ extern lv_obj_t *ta_co2_time;
 extern lv_obj_t *sw_beer[4];
 extern lv_obj_t *sw_co2;
 extern lv_obj_t *sw_head_lift;
-extern lv_obj_t *sw_gate;
+extern lv_obj_t *sw_gate_entry;
+extern lv_obj_t *sw_gate_exit;
 extern lv_obj_t *sw_conveyor;
 
 void ui_screen_dashboard_init(void);

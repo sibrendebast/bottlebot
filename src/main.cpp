@@ -11,6 +11,7 @@
 #include "LGFX_Waveshare_7.hpp"
 #include "ui/screens/screen_dashboard.h"
 #include "ui/ui_theme.h"
+#include "comm.h"
 
 // Create LGFX instance
 LGFX lcd;
@@ -143,6 +144,8 @@ void setup() {
 
     ui_theme_init();
     ui_screen_dashboard_init();
+
+    comm_init();
     
 #if !defined(ARDUINO)
     // In native SDL, give LVGL a cycle to initialize internal style cache before setting states
@@ -170,6 +173,8 @@ void setup() {
 void loop() {
     lv_timer_handler(); // let the GUI do its work
     lv_tick_inc(5);     // tell LVGL 5ms have passed
+    
+    comm_update();
 #if defined(ARDUINO)
     delay(5);
 #else
