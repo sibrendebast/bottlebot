@@ -6,12 +6,11 @@
 #include <unistd.h>
 // #define delay(ms) usleep((ms)*1000) // Conflicting with LovyanGFX's delay()
 #endif
-#include "lv_conf.h"
-#include <lvgl.h>
 #include "LGFX_Waveshare_7.hpp"
+#include "lv_conf.h"
 #include "ui/screens/screen_dashboard.h"
 #include "ui/ui_theme.h"
-#include "comm.h"
+#include <lvgl.h>
 
 // Create LGFX instance
 LGFX lcd;
@@ -34,164 +33,167 @@ LGFX lcd;
 #define I2C_MASTER_SCL_IO 9
 
 /* Change to your screen resolution */
-static const uint16_t screenWidth  = 1024;
+static const uint16_t screenWidth = 1024;
 static const uint16_t screenHeight = 600;
 
 static lv_disp_draw_buf_t draw_buf;
-static lv_color_t buf[screenWidth * screenHeight / 10]; // 1/10 screen size buffer is standard
+static lv_color_t
+    buf[screenWidth * screenHeight / 10]; // 1/10 screen size buffer is standard
 
 /* Display flushing */
-void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p) {
-    uint32_t w = (area->x2 - area->x1 + 1);
-    uint32_t h = (area->y2 - area->y1 + 1);
+void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area,
+                   lv_color_t *color_p) {
+  uint32_t w = (area->x2 - area->x1 + 1);
+  uint32_t h = (area->y2 - area->y1 + 1);
 
-    lcd.startWrite();
-    lcd.setAddrWindow(area->x1, area->y1, w, h);
-    lcd.pushPixels((uint16_t *)&color_p->full, w * h, true);
-    lcd.endWrite();
+  lcd.startWrite();
+  lcd.setAddrWindow(area->x1, area->y1, w, h);
+  lcd.pushPixels((uint16_t *)&color_p->full, w * h, true);
+  lcd.endWrite();
 
-    lv_disp_flush_ready(disp_drv);
+  lv_disp_flush_ready(disp_drv);
 }
 
 /* Read the touchpad */
 void my_touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data) {
-    uint16_t touchX, touchY;
+  uint16_t touchX, touchY;
 
-    bool touched = false;
+  bool touched = false;
 #if defined(ARDUINO)
-    touched = lcd.getTouch(&touchX, &touchY);
+  touched = lcd.getTouch(&touchX, &touchY);
 #else
-    touched = lcd.getTouch(&touchX, &touchY);
+  touched = lcd.getTouch(&touchX, &touchY);
 #endif
 
-    if (!touched) {
-        data->state = LV_INDEV_STATE_REL;
-    } else {
-        data->state = LV_INDEV_STATE_PR;
-        data->point.x = touchX;
-        data->point.y = touchY;
-    }
+  if (!touched) {
+    data->state = LV_INDEV_STATE_REL;
+  } else {
+    data->state = LV_INDEV_STATE_PR;
+    data->point.x = touchX;
+    data->point.y = touchY;
+  }
 }
 
 void setup() {
 #if defined(ARDUINO)
-    Serial.begin(115200);
-    Serial.println("Starting Bottle Machine HMI...");
+  Serial.begin(115200);
+  Serial.println("Starting Bottle Machine HMI...");
 #else
-    printf("Starting Bottle Machine HMI (Native)...\n");
+  printf("Starting Bottle Machine HMI (Native)...\n");
 #endif
 
 #if defined(ARDUINO)
-    // 1. Initialize I2C for Expander & Touch
-    Wire.begin(I2C_MASTER_SDA_IO, I2C_MASTER_SCL_IO);
-    
-    // 2. Initialize IO Expander (CH422G for Waveshare 7) manually
-    // Bit mapping based on schematic:
-    // Bit 1: TP_RST
-    // Bit 2: LCD_BL (DISP)
-    // Bit 3: LCD_RST
-    // Bit 4: SD_CS
-    // Bit 5: USB_SEL
-    // Bit 6: LCD_VDD_EN
-    
-    // We want to turn on LCD_VDD_EN (6), LCD_BL (2), LCD_RST (3), and initially TP_RST (1)
-    // 0x4E = 0100 1110 -> Bits 6(VDD), 3(LCD_RST), 2(LCD_BL), 1(TP_RST) are HIGH
-    
-    // First, configure outputs (CH422G requires setting IO direction, usually register 0x24)
-    Wire.beginTransmission(CH422G_I2C_ADDR);
-    Wire.write(0x4E); // All vital pins HIGH
-    Wire.endTransmission();
-    
-    delay(100);
-    
-    // Touch reset sequence (Pull TP_RST LOW briefly)
-    // 0x4C = 0100 1100 -> Bit 1 is LOW
-    Wire.beginTransmission(CH422G_I2C_ADDR);
-    Wire.write(0x4C); 
-    Wire.endTransmission();
-    delay(20);
-    // Bring TP_RST HIGH again
-    Wire.beginTransmission(CH422G_I2C_ADDR);
-    Wire.write(0x4E); 
-    Wire.endTransmission();
-    delay(100);
+  // 1. Initialize I2C for Expander & Touch
+  Wire.begin(I2C_MASTER_SDA_IO, I2C_MASTER_SCL_IO);
+
+  // 2. Initialize IO Expander (CH422G for Waveshare 7) manually
+  // Bit mapping based on schematic:
+  // Bit 1: TP_RST
+  // Bit 2: LCD_BL (DISP)
+  // Bit 3: LCD_RST
+  // Bit 4: SD_CS
+  // Bit 5: USB_SEL
+  // Bit 6: LCD_VDD_EN
+
+  // We want to turn on LCD_VDD_EN (6), LCD_BL (2), LCD_RST (3), and initially
+  // TP_RST (1) 0x4E = 0100 1110 -> Bits 6(VDD), 3(LCD_RST), 2(LCD_BL),
+  // 1(TP_RST) are HIGH
+
+  // First, configure outputs (CH422G requires setting IO direction, usually
+  // register 0x24)
+  Wire.beginTransmission(CH422G_I2C_ADDR);
+  Wire.write(0x4E); // All vital pins HIGH
+  Wire.endTransmission();
+
+  delay(100);
+
+  // Touch reset sequence (Pull TP_RST LOW briefly)
+  // 0x4C = 0100 1100 -> Bit 1 is LOW
+  Wire.beginTransmission(CH422G_I2C_ADDR);
+  Wire.write(0x4C);
+  Wire.endTransmission();
+  delay(20);
+  // Bring TP_RST HIGH again
+  Wire.beginTransmission(CH422G_I2C_ADDR);
+  Wire.write(0x4E);
+  Wire.endTransmission();
+  delay(100);
 #endif
 
-    // Initialize LVGL before configuring display
-    lv_init();
+  // Initialize LVGL before configuring display
+  lv_init();
 
-    // 3. Initialize Display
-    lcd.begin();
-    lcd.fillScreen(TFT_BLACK);
+  // 3. Initialize Display
+  lcd.begin();
+  lcd.fillScreen(TFT_BLACK);
 
-    lv_disp_draw_buf_init(&draw_buf, buf, NULL, screenWidth * screenHeight / 10);
+  lv_disp_draw_buf_init(&draw_buf, buf, NULL, screenWidth * screenHeight / 10);
 
-    /*Initialize the display*/
-    static lv_disp_drv_t disp_drv;
-    lv_disp_drv_init(&disp_drv);
-    disp_drv.hor_res = screenWidth;
-    disp_drv.ver_res = screenHeight;
-    disp_drv.flush_cb = my_disp_flush;
-    disp_drv.draw_buf = &draw_buf;
-    lv_disp_drv_register(&disp_drv);
+  /*Initialize the display*/
+  static lv_disp_drv_t disp_drv;
+  lv_disp_drv_init(&disp_drv);
+  disp_drv.hor_res = screenWidth;
+  disp_drv.ver_res = screenHeight;
+  disp_drv.flush_cb = my_disp_flush;
+  disp_drv.draw_buf = &draw_buf;
+  lv_disp_drv_register(&disp_drv);
 
-    /*Initialize the input device driver*/
-    static lv_indev_drv_t indev_drv;
-    lv_indev_drv_init(&indev_drv);
-    indev_drv.type = LV_INDEV_TYPE_POINTER;
-    indev_drv.read_cb = my_touchpad_read;
-    lv_indev_drv_register(&indev_drv);
+  /*Initialize the input device driver*/
+  static lv_indev_drv_t indev_drv;
+  lv_indev_drv_init(&indev_drv);
+  indev_drv.type = LV_INDEV_TYPE_POINTER;
+  indev_drv.read_cb = my_touchpad_read;
+  lv_indev_drv_register(&indev_drv);
 
-    ui_theme_init();
-    ui_screen_dashboard_init();
+  ui_theme_init();
+  ui_screen_dashboard_init();
 
-    comm_init();
-    
 #if !defined(ARDUINO)
-    // In native SDL, give LVGL a cycle to initialize internal style cache before setting states
-    lv_tick_inc(5);
-    lv_timer_handler();
+  // In native SDL, give LVGL a cycle to initialize internal style cache before
+  // setting states
+  lv_tick_inc(5);
+  lv_timer_handler();
 #endif
 
 #if defined(ARDUINO) || defined(NATIVE)
-    // Set some dummy data for the 4 heads to test the dashboard
-    ui_update_status("IDLE");
-    ui_update_lifetime(1254);
-    ui_update_head_data(0, true, 215, 330);
-    ui_update_head_data(1, true, 180, 330);
-    ui_update_head_data(2, false, 0, 330);
-    ui_update_head_data(3, true, 330, 330);
+  // Set some dummy data for the 4 heads to test the dashboard
+  ui_update_status("IDLE");
+  ui_update_lifetime(1254);
+  ui_update_head_data(0, true, 215, 330);
+  ui_update_head_data(1, true, 180, 330);
+  ui_update_head_data(2, false, 0, 330);
+  ui_update_head_data(3, true, 330, 330);
+  ui_update_calibration(0, 1024);
+  ui_update_calibration(1, 1018);
+  ui_update_calibration(2, 1030);
+  ui_update_calibration(3, 1022);
 #endif
 
 #if defined(ARDUINO)
-    Serial.println("Setup done");
+  Serial.println("Setup done");
 #else
-    printf("Setup done\n");
+  printf("Setup done\n");
 #endif
 }
 
 void loop() {
-    lv_timer_handler(); // let the GUI do its work
-    lv_tick_inc(5);     // tell LVGL 5ms have passed
-    
-    comm_update();
+  lv_timer_handler(); // let the GUI do its work
+  lv_tick_inc(5);     // tell LVGL 5ms have passed
 #if defined(ARDUINO)
-    delay(5);
+  delay(5);
 #else
-    usleep(5000);
+  usleep(5000);
 #endif
 }
 
 #if !defined(ARDUINO)
-int user_loop(bool* running) {
-    setup();
-    while (*running) {
-        loop();
-    }
-    return 0;
+int user_loop(bool *running) {
+  setup();
+  while (*running) {
+    loop();
+  }
+  return 0;
 }
 
-int main(void) {
-    return lgfx::Panel_sdl::main(user_loop);
-}
+int main(void) { return lgfx::Panel_sdl::main(user_loop); }
 #endif

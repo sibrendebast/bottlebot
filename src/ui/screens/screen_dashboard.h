@@ -13,12 +13,14 @@ extern lv_obj_t *led_bottle[4];
 extern lv_obj_t *ta_fill_target;
 extern lv_obj_t *ta_co2_time;
 
+// Calibration fields
+extern lv_obj_t *ta_head_ticks[4];
+
 // Switches for manual
 extern lv_obj_t *sw_beer[4];
 extern lv_obj_t *sw_co2;
 extern lv_obj_t *sw_head_lift;
-extern lv_obj_t *sw_gate_entry;
-extern lv_obj_t *sw_gate_exit;
+extern lv_obj_t *sw_gate;
 extern lv_obj_t *sw_conveyor;
 
 void ui_screen_dashboard_init(void);
@@ -27,3 +29,4 @@ void ui_screen_dashboard_init(void);
 void ui_update_status(const char* status);
 void ui_update_lifetime(uint32_t count);
 void ui_update_head_data(uint8_t index, bool bottle_present, int volume_ml, int target_ml);
+void ui_update_calibration(uint8_t index, uint32_t ticks);
